@@ -1,5 +1,6 @@
 
 import express from 'express'
+import { extractTextFromFile } from "../utils/pdfparser.js";
 import Job from '../models/Job.js'
 import Application from '../models/Application.js'
 import auth from '../middleware/auth.js'
@@ -8,7 +9,14 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import multer from 'multer'
-import  * as  pdfParse  from 'pdf-parse'   // ✅ FIXED IMPORT
+// import  * as  pdfParse  from 'pdf-parse'   // ✅ FIXED IMPORT
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const pdfParse = require("pdf-parse");
+
+
+// const resumeText = await extractTextFromFile(req);
+
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -144,105 +152,72 @@ router.get('/my-jobs', auth, async (req, res) => {
 // =====================
 router.post('/:id/apply', auth, upload.single('resume'), async (req, res) => {
   try {
-    if (req.user.role !== 'applicant') return res.status(403).json({ message: 'Access denied' })
+    console.log("🔥 APPLY ROUTE HIT");
 
-    const job = await Job.findById(req.params.id)
-    if (!job) return res.status(404).json({ message: 'Job not found' })
-
-    // check duplicate
-    const exists = await Application.findOne({ job: req.params.id, applicant: req.user.id })
-    if (exists) return res.status(400).json({ message: 'Already applied' })
-
-    // ========= Resume extraction =========
-    let resumeText = ""
-    let atsScore = 0
-    let strongKeywords = []
-    let missingKeywords = []
-
-    if (req.file) {
-      const filePath = path.join(process.cwd(), "uploads", req.file.filename)
-      resumeText = await extractTextFromFile(filePath)
-
-      const analysis = await analyzeResumeWithGemini(resumeText, job.description)
-      atsScore = analysis.score
-      strongKeywords = analysis.strongKeywords
-      missingKeywords = analysis.missingKeywords
+    if (req.user.role !== 'applicant') {
+      return res.status(403).json({ message: 'Access denied' });
     }
 
+    const job = await Job.findById(req.params.id);
+    if (!job) return res.status(404).json({ message: 'Job not found' });
+
+    // Duplicate check
+    const exists = await Application.findOne({
+      job: req.params.id,
+      applicant: req.user.id,
+    });
+
+    if (exists) {
+      return res.status(400).json({ message: 'Already applied' });
+    }
+
+    // ===== RESUME TEXT + ATS SCORE =====
+    let resumeText = "";
+    let atsScore = 0;
+    let strongKeywords = [];
+    let missingKeywords = [];
+
+    if (req.file) {
+      const filePath = path.join(process.cwd(), "uploads", req.file.filename);
+
+      // Extract PDF text
+      resumeText = await extractTextFromFile(filePath);
+
+      // Run ATS comparison
+      const analysis = await analyzeResumeWithGemini(resumeText, job.description);
+
+      atsScore = analysis.score;
+      strongKeywords = analysis.strongKeywords;
+      missingKeywords = analysis.missingKeywords;
+    }
+
+    // SAVE APPLICATION
     const application = new Application({
       job: req.params.id,
       applicant: req.user.id,
       resume: req.file ? `/uploads/${req.file.filename}` : null,
       atsScore,
       strongKeywords,
-      missingKeywords
-    })
+      missingKeywords,
+    });
 
-    await application.save()
+    await application.save();
 
-    res.status(201).json({
+    console.log("✅ APPLICATION SAVED:", application);
+
+    return res.status(201).json({
       message: "Application submitted",
       atsScore,
       strongKeywords,
-      missingKeywords
-    })
+      missingKeywords,
+    });
 
   } catch (error) {
-    console.log("APPLY ERROR:", error)
-    res.status(500).json({ message: 'Server error' })
+    console.log("❌ APPLY ERROR:", error);
+    res.status(500).json({ message: "Server error", error });
   }
-})
+});
 
-// =====================
-// EXTRACT TEXT FROM FILE
-// =====================
-async function extractTextFromFile(filePath) {
-  try {
-    const ext = path.extname(filePath).toLowerCase()
 
-    if (ext === ".pdf") {
-      const buffer = fs.readFileSync(filePath)
-      const data = await pdfParse(buffer)    // ✔ Correct function
-      return data.text
-    }
-
-    if (ext === ".txt") return fs.readFileSync(filePath, "utf8")
-
-    return "Unsupported file type"
-  } catch (error) {
-    console.error("PDF TEXT ERROR:", error)
-    return "Error extracting text"
-  }
-}
-
-// =====================
-// ATS ANALYSIS WITH GEMINI
-// =====================
-async function analyzeResumeWithGemini(resumeText, jobDescription) {
-  try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" })
-
-    const prompt = `
-      Compare this resume with the job description.
-      Return JSON only: {"score": number, "strongKeywords": [], "missingKeywords": []}
-
-      Resume: ${resumeText}
-      Job Description: ${jobDescription}
-    `
-
-    const result = await model.generateContent(prompt)
-    const txt = result.response.text()
-
-    try {
-      return JSON.parse(txt)
-    } catch {
-      return { score: 70, strongKeywords: [], missingKeywords: [] }
-    }
-
-  } catch (error) {
-    console.error("Gemini Error:", error)
-    return { score: 50, strongKeywords: [], missingKeywords: [] }
-  }
-}
 
 export default router
