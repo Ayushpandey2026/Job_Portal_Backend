@@ -21,4 +21,25 @@ router.get('/my-applications', auth, async (req, res) => {
   }
 })
 
+
+// Get all applications (Recruiter only)
+router.get('/all-applications', auth, async (req, res) => {
+  try {
+    if (req.user.role !== 'recruiter') {
+      return res.status(403).json({ message: 'Access denied' })
+    }
+
+    const apps = await Application.find()
+      .populate('applicant', 'name email resume')
+      .populate('job', 'title company location')
+      .sort({ appliedAt: -1 })
+
+    res.json(apps)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+
 export default router

@@ -1,243 +1,4 @@
 
-// import express from 'express'
-// import Job from '../models/Job.js'
-// import Application from '../models/Application.js'
-// import auth from '../middleware/auth.js'
-// import { GoogleGenerativeAI } from '@google/generative-ai'
-// import fs from 'fs'
-// import path from 'path'
-// import { fileURLToPath } from 'url'
-// import multer from 'multer'
-// // import pdf from 'pdf-parse'   // ✅ FIXED IMPORT
-// import * as pdfParse from 'pdf-parse';
-
-// const __filename = fileURLToPath(import.meta.url)
-// const __dirname = path.dirname(__filename)
-
-// const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-
-// // === Multer config ===
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, path.join(__dirname, '../uploads'))
-//   },
-//   filename: (req, file, cb) => {
-//     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-//     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname))
-//   }
-// })
-
-// const upload = multer({ storage })
-
-// const router = express.Router()
-
-// // =====================
-// // GET ALL JOBS
-// // =====================
-// router.get('/', async (req, res) => {
-//   try {
-//     const { title, location, category, type } = req.query
-//     let query = {}
-
-//     if (title) query.title = { $regex: title, $options: 'i' }
-//     if (location) query.location = { $regex: location, $options: 'i' }
-//     if (category) query.category = category
-//     if (type) query.constraints = { $regex: type, $options: 'i' }
-
-//     const jobs = await Job.find(query).populate('recruiter', 'name email')
-//     res.json(jobs)
-//   } catch (error) {
-//     res.status(500).json({ message: 'Server error' })
-//   }
-// })
-
-// // =====================
-// // GET JOB BY ID
-// // =====================
-// router.get('/:id', async (req, res) => {
-//   try {
-//     const job = await Job.findById(req.params.id).populate('recruiter', 'name email')
-//     if (!job) {
-//       return res.status(404).json({ message: 'Job not found' })
-//     }
-//     res.json(job)
-//   } catch (error) {
-//     res.status(500).json({ message: 'Server error' })
-//   }
-// })
-
-// // =====================
-// // UPDATE JOB (Recruiter)
-// // =====================
-// router.put('/:id', auth, async (req, res) => {
-//   try {
-//     if (req.user.role !== 'recruiter') return res.status(403).json({ message: 'Access denied' })
-
-//     const job = await Job.findById(req.params.id)
-//     if (!job || job.recruiter.toString() !== req.user.id)
-//       return res.status(403).json({ message: 'Access denied' })
-
-//     Object.assign(job, req.body)
-//     await job.save()
-//     res.json(job)
-//   } catch (error) {
-//     res.status(500).json({ message: 'Server error' })
-//   }
-// })
-
-// // =====================
-// // CREATE JOB (Recruiter)
-// // =====================
-// router.post('/', auth, async (req, res) => {
-//   try {
-//     if (req.user.role !== 'recruiter') return res.status(403).json({ message: 'Access denied' })
-
-//     const job = new Job({ ...req.body, recruiter: req.user.id })
-//     await job.save()
-//     res.status(201).json(job)
-//   } catch (error) {
-//     res.status(500).json({ message: 'Server error' })
-//   }
-// })
-
-// // =====================
-// // RECRUITER JOBS
-// // =====================
-// router.get('/my-jobs', auth, async (req, res) => {
-//   try {
-//     if (req.user.role !== 'recruiter') return res.status(403).json({ message: 'Access denied' })
-
-//     const jobs = await Job.find({ recruiter: req.user.id })
-//     res.json(jobs)
-//   } catch (error) {
-//     res.status(500).json({ message: 'Server error' })
-//   }
-// })
-
-// // =====================
-// // APPLY JOB (Applicant)
-// // =====================
-// router.post('/:id/apply', auth, upload.single('resume'), async (req, res) => {
-//   try {
-//     if (req.user.role !== 'applicant') return res.status(403).json({ message: 'Access denied' })
-
-//     const job = await Job.findById(req.params.id)
-//     if (!job) return res.status(404).json({ message: 'Job not found' })
-
-//     // Check duplicate application
-//     const existing = await Application.findOne({
-//       job: req.params.id,
-//       applicant: req.user.id
-//     })
-
-//     if (existing) return res.status(400).json({ message: 'Already applied' })
-
-//     // ===== Extract Resume Text =====
-//     let resumeText = ''
-//     let atsScore = 0
-//     let strongKeywords = []
-//     let missingKeywords = []
-
-//     if (req.file) {
-//       const filePath = path.join(__dirname, '../uploads', req.file.filename)
-
-//       resumeText = await extractTextFromFile(filePath)
-
-//       const analysis = await analyzeResumeWithGemini(resumeText, job.description)
-//       atsScore = analysis.score
-//       strongKeywords = analysis.strongKeywords
-//       missingKeywords = analysis.missingKeywords
-//     }
-
-//     const application = new Application({
-//       job: req.params.id,
-//       applicant: req.user.id,
-//       resume: req.file ? `/uploads/${req.file.filename}` : null,   // ✅ FIXED PATH
-//       atsScore,
-//       strongKeywords,
-//       missingKeywords
-//     })
-
-//     await application.save()
-
-//     res.status(201).json({
-//       message: 'Application submitted',
-//       atsScore,
-//       strongKeywords,
-//       missingKeywords
-//     })
-//   } catch (error) {
-//     console.log(error)
-//     res.status(500).json({ message: 'Server error' })
-//   }
-// })
-
-// // =====================
-// // EXTRACT TEXT (PDF)
-// // =====================
-// async function extractTextFromFile(filePath) {
-//   try {
-//     const ext = path.extname(filePath).toLowerCase()
-
-//     if (ext === '.pdf') {
-//       const buffer = fs.readFileSync(filePath)
-//       const data = await pdf(buffer)       // ✅ FIXED
-//       return data.text
-//     }
-
-//     if (ext === '.txt') return fs.readFileSync(filePath, 'utf8')
-
-//     return "Unsupported file type"
-//   } catch (error) {
-//     console.error('Error extracting text:', error)
-//     return "Error extracting resume text"
-//   }
-// }
-
-// // =====================
-// // ATS ANALYSIS (Gemini)
-// // =====================
-// async function analyzeResumeWithGemini(resumeText, jobDescription) {
-//   try {
-//     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" })   // ✅ FIXED
-
-//     const prompt = `
-//       Analyze this resume vs job description:
-//       Return JSON: {"score": number, "strongKeywords": [], "missingKeywords": []}
-
-//       Resume: ${resumeText}
-//       Job Description: ${jobDescription}
-//     `
-
-//     const result = await model.generateContent(prompt)
-//     const txt = result.response.text()
-
-//     try {
-//       return JSON.parse(txt)
-//     } catch {
-//       return {
-//         score: 70,
-//         strongKeywords: ["JavaScript", "React"],
-//         missingKeywords: ["MongoDB", "AWS"]
-//       }
-//     }
-//   } catch (error) {
-//     console.error("Gemini error:", error)
-//     return {
-//       score: 65,
-//       strongKeywords: ["JavaScript"],
-//       missingKeywords: ["React"]
-//     }
-//   }
-// }
-
-// export default router
-
-
-
-
-
-
 import express from 'express'
 import Job from '../models/Job.js'
 import Application from '../models/Application.js'
@@ -338,6 +99,31 @@ router.post('/', auth, async (req, res) => {
     res.status(500).json({ message: 'Server error' })
   }
 })
+
+
+
+// Get all applications for a specific job (Recruiter only)
+router.get("/:jobId/applications", auth, async (req, res) => {
+  try {
+    if (req.user.role !== "recruiter") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const { jobId } = req.params;
+
+    const applications = await Application.find({ job: jobId })
+      .populate("applicant", "name email phone")
+      .sort({ appliedAt: -1 });
+
+    res.json(applications);
+  } catch (error) {
+    console.error("Error fetching job applications:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
 
 // =====================
 // RECRUITER JOBS
