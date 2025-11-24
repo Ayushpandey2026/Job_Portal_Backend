@@ -33,14 +33,16 @@ const upload = multer({ storage: storage })
 
 // Middleware
 app.use(cors({
-  origin: ['https://jobwallah.vercel.app', 'http://localhost:3000', 'http://localhost:5173'],
+  origin: ['https://jobwallah.vercel.app', 'http://localhost:3000', 'http://localhost:5173','http://localhost:5174'],
   credentials: true
 }))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+// app.use("/uploads", express.static("uploads"));
 
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 // Serve uploaded files statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/job-portal')

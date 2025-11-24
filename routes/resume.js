@@ -20,13 +20,14 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads'))
+    cb(null, path.join(process.cwd(), "uploads"));   // 🔥 FIXED
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname))
+    const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, "resume-" + unique + path.extname(file.originalname));
   }
-})
+});
+
 
 const upload = multer({ storage: storage })
 
