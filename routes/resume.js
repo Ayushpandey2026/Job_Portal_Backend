@@ -17,6 +17,15 @@ const __dirname = path.dirname(__filename)
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
 
+
+// const fileBuffer = req.file?.buffer;
+
+// if (!fileBuffer) {
+//   return res.status(400).json({ message: "Resume file not found" });
+// }
+
+// const text = await pdfParse(fileBuffer);
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -27,6 +36,10 @@ const storage = multer.diskStorage({
     cb(null, "resume-" + unique + path.extname(file.originalname));
   }
 });
+
+
+
+
 
 
 const upload = multer({ storage: storage })

@@ -13,10 +13,16 @@ import multer from 'multer'
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const pdfParse = require("pdf-parse");
+import { analyzeResumeWithGemini } from '../utils/gemini.js'
 
 
-// const resumeText = await extractTextFromFile(req);
+// 1️⃣ Define upload path
+const uploadPath = path.join(process.cwd(), 'uploads');
 
+// 2️⃣ Ensure folder exists
+if (!fs.existsSync(uploadPath)) {
+  fs.mkdirSync(uploadPath, { recursive: true });
+}
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -27,14 +33,14 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
 // MULTER STORAGE FIXED
 // =======================
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(process.cwd(), "uploads"))  // 🔥 GLOBAL root folder
-  },
+  destination: (req, file, cb) => cb(null, uploadPath),
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname))
+    const ext = path.extname(file.originalname);
+    const name = file.fieldname.replace(/\s+/g, "_");
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `${name}-${uniqueSuffix}${ext}`);
   }
-})
+});
 
 const upload = multer({ storage })
 const router = express.Router()
@@ -181,7 +187,7 @@ router.post('/:id/apply', auth, upload.single('resume'), async (req, res) => {
       const filePath = path.join(process.cwd(), "uploads", req.file.filename);
 
       // Extract PDF text
-      resumeText = await extractTextFromFile(filePath);
+      resumeText = await extractTextFromFile(req);
 
       // Run ATS comparison
       const analysis = await analyzeResumeWithGemini(resumeText, job.description);

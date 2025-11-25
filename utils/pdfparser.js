@@ -4,16 +4,16 @@ const pdfParse = require("pdf-parse");
 
 export const extractTextFromFile = async (req) => {
   try {
-    const fileBuffer = req.file?.buffer || req.files?.resume?.[0]?.buffer;
+    const fileBuffer = req.file?.buffer;
 
     if (!fileBuffer) {
-      throw new Error("File buffer missing — check upload middleware");
+      throw new Error("File buffer missing — ensure multer upload.single('resume') is active");
     }
 
     const data = await pdfParse(fileBuffer);
-    return data.text; 
-  } catch (error) {
-    console.error("PDF Extract Error:", error);
+    return data.text;
+  } catch (err) {
+    console.error("PDF Extract Error:", err);
     return "";
   }
 };
