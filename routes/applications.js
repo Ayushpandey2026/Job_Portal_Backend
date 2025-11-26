@@ -133,5 +133,65 @@ router.get('/my-applications', auth, async (req, res) => {
 });
 
 
+// GET /api/applications/job/:jobId
+router.get('/job/:jobId', auth, async (req, res) => {
+  try {
+    if (req.user.role !== 'recruiter') return res.status(403).json({ message: 'Access denied' })
+
+    const job = await Job.findById(req.params.jobId)
+    if (!job) return res.status(404).json({ message: 'Job not found' })
+
+    if (job.recruiter.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Access denied' })
+    }
+
+    const applications = await Application.find({ job: job._id })
+      .populate('applicant', 'name email resume')
+      .sort({ appliedAt: -1 })
+
+    res.json(applications)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+
+
+
+// PATCH /api/applications/:appId/status
+router.patch('/:appId/status', auth, async (req, res) => {
+  try {
+    const { status, rejectionReason } = req.body
+    const app = await Application.findById(req.params.appId).populate('job')
+    if (!app) return res.status(404).json({ message: 'Application not found' })
+
+    if (app.job.recruiter.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Access denied' })
+    }
+
+    if (status === 'selected') {
+      if (app.job.openings <= 0) return res.status(400).json({ message: 'No openings left' })
+      app.status = 'selected'
+      app.rejectionReason = ''
+      app.job.openings -= 1
+      await app.job.save()
+    } else if (status === 'rejected') {
+      if (!rejectionReason) return res.status(400).json({ message: 'Rejection reason required' })
+      app.status = 'rejected'
+      app.rejectionReason = rejectionReason
+    } else {
+      return res.status(400).json({ message: 'Invalid status' })
+    }
+
+    await app.save()
+    res.json({ message: 'Application updated', application: app })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+
 
 export default router
