@@ -28,4 +28,12 @@ const auth = async (req, res, next) => {
   }
 };
 
+export const protectRecruiter = (req, res, next) => {
+  if (req.user.role !== "recruiter") {
+    return res.status(403).json({ message: "Only recruiters can access this route" });
+  }
+  next();
+};
+
+
 export default auth;
