@@ -16,8 +16,12 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['recruiter', 'applicant'],
+    enum: ['recruiter', 'applicant','enum'],
     required: true
+  },
+  isBlocked: {
+    type: Boolean,
+    default: false
   },
   phone: {
     type: String,

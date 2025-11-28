@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import adminRoutes from "./routes/adminRoutes.js";
+
 
 // Load environment variables
 dotenv.config();
@@ -63,6 +65,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/resume', resumeRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Health check (Render)
 app.get('/health', (req, res) => {
