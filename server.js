@@ -16,6 +16,7 @@ import authRoutes from './routes/auth.js';
 import jobRoutes from './routes/jobs.js';
 import applicationRoutes from './routes/applications.js';
 import resumeRoutes from './routes/resume.js';
+import applicantRoutes from './routes/applicant.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -40,7 +41,6 @@ const upload = multer({ storage });
 app.use(cors({
   origin: [
     'https://jobwallah.vercel.app',
-    'http://localhost:3000',
     'http://localhost:5173',
     'http://localhost:5174'
   ],
@@ -65,6 +65,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/resume', resumeRoutes);
+app.use('/api/applicant', applicantRoutes);
 app.use("/api/admin", adminRoutes);
 
 // Health check (Render)
