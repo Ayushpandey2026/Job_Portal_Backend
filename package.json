@@ -17,15 +17,21 @@
   "description": "",
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
+    "@xenova/transformers": "^2.6.4",
+    "axios": "^1.6.2",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "form-data": "^4.0.0",
+    "fuse.js": "^7.0.0",
+    "groq-sdk": "^1.1.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.2",
     "multer": "^2.0.2",
     "node-fetch": "^3.3.2",
-    "pdf-parse": "^2.4.5"
+    "pdf-parse-fork": "^1.2.0",
+    "string-similarity": "^4.0.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

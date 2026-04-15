@@ -1,7 +1,7 @@
+import dotenv from 'dotenv';
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -17,6 +17,8 @@ import jobRoutes from './routes/jobs.js';
 import applicationRoutes from './routes/applications.js';
 import resumeRoutes from './routes/resume.js';
 import applicantRoutes from './routes/applicant.js';
+import atsRoutes from './routes/ats.js';
+import jdRoutes from './routes/jd.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -40,8 +42,8 @@ const upload = multer({ storage });
 // ========== Middlewares ==========
 app.use(cors({
   origin: [
+        'http://localhost:5173',
     'https://jobwallah.vercel.app',
-    'http://localhost:5173',
     'http://localhost:5174'
   ],
   credentials: true
@@ -67,6 +69,8 @@ app.use('/api/applications', applicationRoutes);
 app.use('/api/resume', resumeRoutes);
 app.use('/api/applicant', applicantRoutes);
 app.use("/api/admin", adminRoutes);
+app.use('/api/ats', atsRoutes);
+app.use('/api/jd', jdRoutes);
 
 // Health check (Render)
 app.get('/health', (req, res) => {
