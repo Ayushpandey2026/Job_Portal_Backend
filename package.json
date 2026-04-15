@@ -27,6 +27,7 @@
     "fuse.js": "^7.0.0",
     "groq-sdk": "^1.1.2",
     "jsonwebtoken": "^9.0.2",
+    "lodash": "^4.17.21",
     "mongoose": "^8.19.2",
     "multer": "^2.0.2",
     "node-fetch": "^3.3.2",

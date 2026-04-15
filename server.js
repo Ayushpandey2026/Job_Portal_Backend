@@ -42,8 +42,8 @@ const upload = multer({ storage });
 // ========== Middlewares ==========
 app.use(cors({
   origin: [
-        'http://localhost:5173',
     'https://jobwallah.vercel.app',
+    'http://localhost:5173',
     'http://localhost:5174'
   ],
   credentials: true
