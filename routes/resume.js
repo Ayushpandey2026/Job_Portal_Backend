@@ -7,7 +7,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import multer from 'multer'
-import * as pdfParse from 'pdf-parse';
+import * as pdfParse from 'pdf-parse-fork'
 import dotenv from 'dotenv'
 
 dotenv.config()
